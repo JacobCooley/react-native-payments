@@ -280,7 +280,7 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
     
     // Add `shippingOptions` to `shippingMethods`
     NSArray *shippingOptions = details[@"shippingOptions"];
-    if (shippingOptions.count > 0) {
+    if (shippingOptions && shippingOptions.count > 0) {
         for (NSDictionary *shippingOption in shippingOptions) {
             [shippingMethods addObject: [self convertShippingOptionToShippingMethod:shippingOption]];
         }
