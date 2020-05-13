@@ -394,9 +394,12 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
 {
     NSString *transactionId = payment.token.transactionIdentifier;
     NSString *paymentData = [[NSString alloc] initWithData:payment.token.paymentData encoding:NSUTF8StringEncoding];
-    NSMutableDictionary *paymentResponse = [[NSMutableDictionary alloc]initWithCapacity:5];
+    NSMutableDictionary *paymentResponse = [[NSMutableDictionary alloc]initWithCapacity:6];
     [paymentResponse setObject:transactionId forKey:@"transactionIdentifier"];
     [paymentResponse setObject:paymentData forKey:@"paymentData"];
+
+    NSDictionary *paymentMethod = [self convertPaymentMethod:payment.token.paymentMethod];
+    [paymentResponse setObject:paymentMethod forKey:@"paymentMethod"];
 
     if (token) {
         [paymentResponse setObject:token forKey:@"paymentToken"];
@@ -422,6 +425,100 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
                                                             @"error": [error localizedDescription]
                                                             }
      ];
+}
+
+- (NSDictionary *_Nonnull)convertPaymentMethod:(PKPaymentMethod *_Nonnull)paymentMethod
+{
+    NSMutableDictionary *result = [[NSMutableDictionary alloc]initWithCapacity:4];
+
+    if(paymentMethod.displayName) {
+        [result setObject:paymentMethod.displayName forKey:@"displayName"];
+    }
+    if (paymentMethod.network) {
+        [result setObject:paymentMethod.network forKey:@"network"];
+    }
+    NSString *type = [self convertPaymentMethodType:paymentMethod.type];
+    [result setObject:type forKey:@"type"];
+    if(paymentMethod.paymentPass) {
+        NSDictionary *paymentPass = [self convertPaymentPass:paymentMethod.paymentPass];
+        [result setObject:paymentPass forKey:@"paymentPass"];
+    }
+
+    return result;
+}
+
+- (NSString *_Nonnull)convertPaymentMethodType:(PKPaymentMethodType)paymentMethodType
+{
+    NSArray *arr = @[@"PKPaymentMethodTypeUnknown",
+                     @"PKPaymentMethodTypeDebit",
+                     @"PKPaymentMethodTypeCredit",
+                     @"PKPaymentMethodTypePrepaid",
+                     @"PKPaymentMethodTypeStore"];
+    return (NSString *)[arr objectAtIndex:paymentMethodType];
+}
+
+- (NSDictionary *_Nonnull)convertPaymentPass:(PKPaymentPass *_Nonnull)paymentPass
+{
+    return @{
+        @"primaryAccountIdentifier" : paymentPass.primaryAccountIdentifier,
+        @"primaryAccountNumberSuffix" : paymentPass.primaryAccountNumberSuffix,
+        @"deviceAccountIdentifier" : paymentPass.deviceAccountIdentifier,
+        @"deviceAccountNumberSuffix" : paymentPass.deviceAccountNumberSuffix,
+        @"activationState" : [self convertPaymentPassActivationState:paymentPass.activationState]
+    };
+}
+
+- (NSString *_Nonnull)convertPaymentPassActivationState:(PKPaymentPassActivationState)paymentPassActivationState
+{
+    NSArray *arr = @[@"PKPaymentPassActivationStateActivated",
+                     @"PKPaymentPassActivationStateRequiresActivation",
+                     @"PKPaymentPassActivationStateActivating",
+                     @"PKPaymentPassActivationStateSuspended",
+                     @"PKPaymentPassActivationStateDeactivated"];
+    return (NSString *)[arr objectAtIndex:paymentPassActivationState];
+}
+
+- (NSDictionary *_Nonnull)convertContact:(PKContact *_Nonnull)contact
+{
+    NSString *namePrefix = contact.name.namePrefix;
+    NSString *givenName = contact.name.givenName;
+    NSString *middleName = contact.name.middleName;
+    NSString *familyName = contact.name.familyName;
+    NSString *nameSuffix = contact.name.nameSuffix;
+    NSString *nickname = contact.name.nickname;
+    NSString *street = contact.postalAddress.street;
+    NSString *subLocality = contact.postalAddress.subLocality;
+    NSString *city = contact.postalAddress.city;
+    NSString *subAdministrativeArea = contact.postalAddress.subAdministrativeArea;
+    NSString *state = contact.postalAddress.state;
+    NSString *postalCode = contact.postalAddress.postalCode;
+    NSString *country = contact.postalAddress.country;
+    NSString *ISOCountryCode = contact.postalAddress.ISOCountryCode;
+    NSString *phoneNumber = contact.phoneNumber.stringValue;
+    NSString *emailAddress = contact.emailAddress;
+
+    return @{
+         @"name" : @{
+                 @"namePrefix" : namePrefix ?: @"",
+                 @"givenName" : givenName ?: @"",
+                 @"middleName" : middleName ?: @"",
+                 @"familyName" : familyName ?: @"",
+                 @"nameSuffix" : nameSuffix ?: @"",
+                 @"nickname" : nickname ?: @"",
+         },
+         @"postalAddress" : @{
+                 @"street" : street ?: @"",
+                 @"subLocality" : subLocality ?: @"",
+                 @"city" : city ?: @"",
+                 @"subAdministrativeArea" : subAdministrativeArea ?: @"",
+                 @"state" : state ?: @"",
+                 @"postalCode" : postalCode ?: @"",
+                 @"country" : country ?: @"",
+                 @"ISOCountryCode" : ISOCountryCode ?: @""
+         },
+         @"phoneNumber" : phoneNumber ?: @"",
+         @"emailAddress" : emailAddress ?: @""
+    };
 }
 
 @end
